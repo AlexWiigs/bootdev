@@ -1,7 +1,7 @@
 # bookbot
 
 bootbot is a CLI application which takes in a raw text file. It returns the
-total work count, as-well as the count of each letter that appears in the text
+total word count, as-well as the count of each letter that appears in the text
 and orders them by usage. The this is my first [Boot.dev](https://www.boot.dev) project.
 
 **Example:**
