@@ -1,0 +1,98 @@
+---
+title: "Mushroom Classification"
+format:
+  html:
+    toc: true
+    toc-location: left
+    code-fold: true
+---
+
+# Answering Questions
+
+In this project you will use all you learnt about in the class to answer a
+question. Imagine you are part of a team and you have been assigned a question
+to answer, build a notebook that you would be able to share with your team that
+shows what you found.
+
+In this project you will:
+
+1.  Introduce your question of interest
+2.  Make sure your reader knows enough about the data
+3.  Wrangle and preprocess your data so that a team mate can reproduce your work
+4.  Build and test a model that can provide insight into your question
+5.  Interpret your model results
+6.  Answer your question
+
+Note: Marks will be awarded for clarity, organization, and succinctness. I.e.,
+try to point out only the important parts in a well-organized easy to follow
+manner. (Marks: 3)
+
+## 1. Ask a question
+
+**Q1**: Layout your question of interest. Remember to state your question as
+clearly and simply as you can (Mark 1), and what your ideal outcome would be
+(Marks 1).
+
+**Scenario 1:** I am hired by health a company to create software nurses could
+use to identify the toxicity of a mushroom in the event a patient comes to the
+hospital with symptoms and brings one of the mushrooms they ate. Ideal outcome
+is we create a model that predicts edibility with very low error, where the data
+can be realistically entered by a nurse.
+
+**Scenario 2:** Foraging is becoming more popular in Canada and poisoning from
+consumption is going up as a consequence. Can we generalize if a mushroom is
+safe to eat that people could memorize for in-field use? Ideal outcome is that
+we can identify a large portion of mushrooms as safe to eat based on few
+characteristics.
+
+**Q2**: Identify and describe what data sources you'll use (Marks 1). Make sure
+to talk about one of the following: data accuracy, reliability, validity, or
+sample selection. (Marks: 1)
+
+I am using a dataset from
+[kaggle](https://www.kaggle.com/uciml/mushroom-classification) based on the
+Audobon society field guide to north American mushrooms. It "includes
+hypothetical samples corresponding to 23 species of gilled mushrooms in the
+Agaricus and Lepiota families". Thus is doesn't include other types of mushrooms
+like polypores and is probably in reality not actually a suitable sample to
+generalize what we want from it. However, its classification system is described
+throughly in the book (which is so common I happen to own a copy myself). For
+the sake of the project we must pretend.
+
+**Q3**: Layout what kind of ML problem you are facing and what kind of model
+you'll use to answer it (eg., is it unsupervised or supervised learning, and is
+it classification or regression). Make sure to say why. (Marks 1)
+
+The dataset contains a large amount of Catagorical data. I am primarily
+concerned with high accuracy and so will use a random forest to build the best
+possible model. In regards to my secondary goal: finding some generalizable
+rules of thumb to follow, my plan is to create a desicion tree that has pure
+leaf nodes only a few steps down that hopefully contain a large number of
+mushrooms that are safe for consumption. Thus I will be using classification
+that relies on supervised learning.
+
+## 2. Data understanding, exploration, and visualization
+
+**Action**: While above you gave an overview of the dataset(s) that will be
+used, here make sure that the reader understands the important details of the
+data. E.g., show a figure or descriptive statistic and explain why the reader
+should know about this, i.e., how will it help your reader understand your
+analysis? (Marks: 2)
+
+```{python}
+from sklearn.model_selection import train_test_split
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+Shrooms_df = pd.read_csv('~/Documents/github.com/projects/mushroom-classification/mushrooms.csv')
+```
+
+```{python}
+#@title Dataset values all = object
+
+Shrooms_df
+```

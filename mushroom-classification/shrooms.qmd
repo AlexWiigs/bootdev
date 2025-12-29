@@ -1,0 +1,705 @@
+---
+title: "Mushroom Classification"
+format:
+  html:
+    toc: true
+    toc-location: left
+    code-fold: true
+---
+
+# <font color='lightblue'>Answering Questions</font>
+
+In this project you will use all you learnt about in the class to answer a
+question. Imagine you are part of a team and you have been assigned a question
+to answer, build a notebook that you would be able to share with your team that
+shows what you found.
+
+In this project you will:
+
+1.  Introduce your question of interest
+2.  Make sure your reader knows enough about the data
+3.  Wrangle and preprocess your data so that a team mate can reproduce your work
+4.  Build and test a model that can provide insight into your question
+5.  Interpret your model results
+6.  Answer your question
+
+
+Note: Marks will be awarded for clarity, organization, and succinctness. I.e.,
+try to point out only the important parts in a well-organized easy to follow
+manner. (Marks: 3)
+
+## <font color='lightblue'>1. Ask a question </font>
+
+**Q1**: Layout your question of interest. Remember to state your question as
+clearly and simply as you can (Mark 1), and what your ideal outcome would be
+(Marks 1).
+
+**Scenario 1:** I am hired by health a company to create software nurses could
+use to identify the toxicity of a mushroom in the event a patient comes to the
+hospital with symptoms and brings one of the mushrooms they ate. Ideal outcome
+is we create a model that predicts edibility with very low error, where the data
+can be realistically entered by a nurse.
+
+**Scenario 2:** Foraging is becoming more popular in Canada and poisoning from
+consumption is going up as a consequence. Can we generalize if a mushroom is
+safe to eat that people could memorize for in-field use? Ideal outcome is that
+we can identify a large portion of mushrooms as safe to eat based on few
+characteristics.
+
+**Q2**: Identify and describe what data sources you'll use (Marks 1). Make sure
+to talk about one of the following: data accuracy, reliability, validity, or
+sample selection. (Marks: 1)
+
+I am using a dataset from
+[kaggle](https://www.kaggle.com/uciml/mushroom-classification) based on the
+Audobon society field guide to north American mushrooms. It "includes
+hypothetical samples corresponding to 23 species of gilled mushrooms in the
+Agaricus and Lepiota families". Thus is doesn't include other types of mushrooms
+like polypores and is probably in reality not actually a suitable sample to
+generalize what we want from it. However, its classification system is described
+throughly in the book (which is so common I happen to own a copy myself). For
+the sake of the project we must pretend.
+
+**Q3**: Layout what kind of ML problem you are facing and what kind of model
+you'll use to answer it (eg., is it unsupervised or supervised learning, and is
+it classification or regression). Make sure to say why. (Marks 1)
+
+The dataset contains a large amount of Catagorical data. I am primarily
+concerned with high accuracy and so will use a random forest to build the best
+possible model. In regards to my secondary goal: finding some generalizable
+rules of thumb to follow, my plan is to create a desicion tree that has pure
+leaf nodes only a few steps down that hopefully contain a large number of
+mushrooms that are safe for consumption. Thus I will be using classification
+that relies on supervised learning.
+
+## <font color='lightblue'>2. Data understanding, exploration, and visualization
+</font>
+
+**Action**: While above you gave an overview of the dataset(s) that will be
+used, here make sure that the reader understands the important details of the
+data. E.g., show a figure or descriptive statistic and explain why the reader
+should know about this, i.e., how will it help your reader understand your
+analysis? (Marks: 2)
+
+```{python}
+from sklearn.model_selection import train_test_split
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+Shrooms_df = pd.read_csv('~/Documents/github.com/projects/mushroom-classification/mushrooms.csv')
+```
+
+```{python}
+#@title Dataset values all = object
+
+Shrooms_df
+```
+
+<img src='https://atrium.lib.uoguelph.ca/xmlui/bitstream/handle/10214/6949/Features_to_ID_Mushrooms_diagram.jpg?sequence=1&isAllowed=y'>
+
+**Variable Legend:**
+
+class: edible = e, poisonous = p
+
+cap-shape: bell = b, conical = c, convex = x, flat = f, knobbed = k, sunken = s
+cap-surface: fibrous = f, grooves = g, scaly = y, smooth = s
+
+cap-color: brown = n, buff = b, cinnamon = c, gray = g, green = r, pink = p, purple = u, red = e, white = w,  yellow = y
+
+bruises: bruises = t, no = f
+
+odor: almond = a, anise = l, creosate = c, fishy = y, foul = f, musty = m, none = n, pungent = p, spicy = s
+
+gill-attachment: attachment = a, descending = d, free = f, notched = n
+
+gill-spacing: close = c, crowded = w, distant = d
+
+gill-size: broad = b, narrow = n
+
+gill-color: black = k, brown = n, buff = b, chocolate = h, gray = g, green = r, orange = o, pinl = p, purple = u, red = e, white = w, yellow = y
+
+stalk-shape: enlarging = e, tapering = t
+
+stalk-root: bulbous = b, club = c, cup = u, equal = e, rhizomorphs = z, rooted = r, missing = ?
+
+stalk_surface_above_ring: fibrous = f, scaly = y, silky = k, smooth = s
+
+stalk_surface_below_ring: fibrous = f, scaly = y, silky = k, smooth = s
+
+Stalk_color_above_ring: bown = n, buff = b, cinnamon = c, gray = g, orange = o, pink = p, red = e, white = w, yellow = y
+
+Stalk_color_below_ring: bown = n, buff = b, cinnamon = c, gray = g, orange = o, pink = p, red = e, white = w, yellow = y
+
+veil_type: partial = p, universal = u
+
+veil_color: brown = u, orange = o, white = w, yellow = y
+
+ring_number: none = n, one = o, two = t
+
+ring_type: cobwebby = c, evanescent = e, flaring = f, large = l, none = n, pendant = p, sheathing = s, zone = z
+
+spore_print_color: black = k, brown = n, buff = b, chocolate = h, green = r, orange = o, purple = u, white = w, yellow = y
+
+population: abundant = a, clustered = c, numerous = n, scattered = s, several = v, solitary = y
+
+habitat: grasses = g, leabes = l, meadows = m, paths = p, urban = u, waste = w, woods = d
+
+```{python}
+#@title Roughly half of the mushrooms in our data are edible
+sns.countplot(data=Shrooms_df, x='class', palette="Pastel2_r")
+```
+
+**Action**: Layout all your data wrangling and preprocessing steps so that a reader will understand why you took each step, and would be able to reproduce your steps. (Marks: 3)
+
+```{python}
+#@title Rename columns: transforms '-' into '_'s (eg: cap-shape becomes cap_shape)
+# Was running into syntax errors before change
+Shrooms_df = Shrooms_df.rename(columns={'class':'poisonous',
+                           'cap-shape':'cap_shape',
+                           'cap-surface':'cap_surface',
+                           'cap-color':'cap_color',
+                           'gill-attachment':'gill_attachment',
+                           'gill-spacing':'gill_spacing',
+                           'gill-size':'gill_size',
+                           'gill-color':'gill_color',
+                           'stalk-shape':'stalk_shape',
+                           'stalk-root':'stalk_root',
+                           'stalk-surface-above-ring':'stalk_surface_above_ring',
+                           'stalk-surface-below-ring':'stalk_surface_below_ring',
+                           'stalk-color-above-ring':'stalk_color_above_ring',
+                           'stalk-color-below-ring':'stalk_color_below_ring',
+                           'veil-type':'veil_type',
+                           'veil-color':'veil_color',
+                           'ring-number':'ring_number',
+                           'ring-type':'ring_type',
+                           'spore-print-color':'spore_print_color'
+                           })
+```
+
+I kept running into syntax error's because the variable names contained '-', so
+before we get started lets turn them into '_'. I also changed the "class" column
+into "poisonuous" because we need to use Ordinal Encoder. 1 represents poisonous
+and 0 represents edible.
+
+```{python}
+#@title Remove 'population', 'habitat', and 'bruises'
+Shrooms_df = Shrooms_df.drop(labels=['population','habitat','bruises'], axis=1)
+```
+
+It is not realistic That someone would know the Mushrooms population or habitat
+so I have removed them. After
+[researching](https://www.mushroom-appreciation.com/identifying-mushrooms.html#sthash.hi3o0feM.dpbs)
+that bruises represents a change in color after handling and becomes unreliable
+after ~30 minutes of being harvested, I have also removed bruises from the
+dataframe.
+
+```{python}
+#@title Change poisonous(class) variable into 0/1 with Ordinal Encoder
+from sklearn.preprocessing import OrdinalEncoder
+
+bin_names = ['poisonous']
+bin_features = Shrooms_df[bin_names]
+bin_scaler = OrdinalEncoder().fit(bin_features.values)
+bin_features = bin_scaler.transform(bin_features.values)
+Shrooms_df[bin_names] = bin_features
+```
+
+changes poisounous into 0/1 with ordinal encoder to prepare it for model building.
+
+```{python}
+#| colab: {base_uri: https://localhost:8080/, height: 439}
+#| cellView: form
+#| executionInfo: {status: ok, timestamp: 1629437526942, user_tz: 360, elapsed: 305, user: {displayName: Alex W, photoUrl: https://lh3.googleusercontent.com/a-/AOh14GiFzd0G_jRVol6WQbH8zz9gYzc91VKF4I_sObGZaA=s64, userId: '00724482172980213547'}}
+#@title Change all our predicting variables into dummies
+middlechild = Shrooms_df.drop(labels = ['poisonous'], axis=1)
+
+cat_names = ['cap_shape',
+             'cap_surface',
+             'cap_color',
+             'odor',
+             'gill_attachment',
+             'gill_spacing',
+             'gill_color',
+             'stalk_root',
+             'stalk_surface_above_ring',
+             'stalk_surface_below_ring',
+             'stalk_color_above_ring',
+             'stalk_color_below_ring',
+             'veil_color',
+             'ring_number',
+             'ring_type',
+             'spore_print_color',
+             'gill_size',
+             'stalk_shape',
+             'veil_type',
+             ]
+df_cat = pd.get_dummies(data=middlechild, columns=cat_names)
+Shrooms_df = pd.concat([Shrooms_df, df_cat], axis=1)
+Shrooms_df = Shrooms_df.drop(cat_names, axis=1)
+
+Shrooms_df
+```
+
+We now have 103 columns in our dataframe. Hopefully we can eliminate the vast
+majority of them and still have a highly reliable model.
+
+## <font color='lightblue'>4. Build and test a model</font>
+
+**Action:** Use your training dataset to build a model with the goal addressing your question of interest. (Marks: 2)
+
+**Q4**: Measure the performance of your model, and describe how well your model generalizes to new data (Marks: 2)
+
+```{python}
+#@title Install dtreeviz
+from dtreeviz.trees import dtreeviz
+```
+
+```{python}
+#@title Split Data and Create Desicion Tree
+#@markdown y = 'poisonous', test size =0.2
+
+X = Shrooms_df.drop('poisonous', axis=1)
+y = Shrooms_df['poisonous']
+y = y.astype('int')
+X = X.astype('int')
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
+
+from sklearn.tree import DecisionTreeClassifier
+classifier = DecisionTreeClassifier()
+classifier_res = classifier.fit(X_train, y_train)
+
+y_tree_pred = classifier.predict(X_test)
+
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y_test, y_tree_pred)
+
+sns.heatmap(cm, annot=True, cmap='Pastel2', linecolor='black', linewidth=1)
+plt.xlabel('Predicted Poisonous')
+plt.ylabel('True Poisonous')
+```
+
+```{python}
+#@title Performance:
+print('Accuracy: {:.3f}'.format(sk.metrics.accuracy_score(y_test, y_tree_pred)))
+print('Null Accuracy: {:.3f}'.format(1-(y_train.sum()/(y_train.count()))))
+print('Precision: {:.3f}'.format(sk.metrics.precision_score(y_test, y_tree_pred, average='micro')))
+print('Recall: {:.3f}'.format(sk.metrics.recall_score(y_test, y_tree_pred, average='micro')))
+```
+
+Using all possible variables we have a model that misses 0 predictions in our
+test. Since our decision tree performed so well lets calculate the most
+important variables with permutation importance.
+
+```{python}
+#@title Create a Desicion Forest
+from sklearn.ensemble import RandomForestClassifier
+
+forest_classifier = RandomForestClassifier(n_estimators=1000, bootstrap=True, max_features=0.8, max_samples=0.8 )
+forest_classifier.fit(X_train, y_train)
+
+y_forest_pred = forest_classifier.predict(X_test)
+
+from sklearn.metrics import confusion_matrix
+cm_forest = confusion_matrix(y_test, y_forest_pred)
+```
+
+```{python}
+#@title Calculate Permutation Importance
+from sklearn.inspection import permutation_importance
+perm_result = permutation_importance(forest_classifier, X=X_test, y=y_test, scoring='accuracy', n_repeats = 30)
+forest_importances = pd.DataFrame({'variable':X_test.columns,'impo':perm_result.importances_mean.round(4), 'sd':perm_result.importances_std.round(4)})
+forest_importances.sort_values(by='impo', ascending = False)
+
+forest_importances_sorted = forest_importances.sort_values(by='impo', ascending=False)
+forest_importances_sorted.to_csv("permute_importance_with_spores.csv")
+
+forest_importances_sorted.head(10)
+```
+
+```{python}
+#@title Create a Regression and Calc Optimal Features
+from sklearn.model_selection import KFold
+from sklearn.feature_selection import RFECV
+
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.inspection import permutation_importance
+
+X = Shrooms_df.drop(['poisonous'], axis=1)
+y = Shrooms_df['poisonous']
+
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.20)
+
+LR1 = LinearRegression()
+LR1.fit(X_train, y_train)
+
+min_features_to_select = 1
+rfecv = RFECV(estimator=LR1, step=1, cv=3, scoring= 'neg_mean_squared_error', min_features_to_select = min_features_to_select)
+rfecv.fit(X_train, y_train)
+
+print("Oprimal number of features: %d" % rfecv.n_features_)
+
+# plt.figure()
+# plt.xlabel("Number of features selected")
+# plt.ylabel("Cross validation score (mean square error?)")
+# plt.plot(range(min_features_to_select,
+#                len(rfecv.grid_scores_) + min_features_to_select),
+#          rfecv.grid_scores_)
+# plt.show()
+```
+
+Permutation importance drops to 0 after 8 variables and regression optimal
+features seems to validate. Let's rebuild our model with only the 8 variables
+that show importance and see how our new reduced model preforms.
+
+```{python}
+Reduced_Shrooms = Shrooms_df.loc[:,['odor_n', 'odor_l', 'odor_a','spore_print_color_r','stalk_root_c','stalk_surface_below_ring_y','cap_color_w','cap_surface_g','stalk_color_below_ring_c','stalk_color_below_ring_o','poisonous'] ]
+```
+
+```{python}
+#@title Split our Reduced Variable Dataframe and create a new Decision Tree
+X = Reduced_Shrooms.drop('poisonous', axis=1)
+y = Reduced_Shrooms['poisonous']
+y = y.astype('int')
+X = X.astype('int')
+
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.20)
+
+from sklearn.tree import DecisionTreeClassifier
+
+tree_classifier = DecisionTreeClassifier()
+tree_classifier.fit(X_train, y_train)
+
+from sklearn.tree import DecisionTreeClassifier
+classifier = DecisionTreeClassifier()
+classifier_res = classifier.fit(X_train, y_train)
+
+y_tree_pred = classifier.predict(X_test)
+```
+
+```{python}
+#@title Reduced Variable Decision Tree Preformance
+print('Accuracy: {:.3f}'.format(sk.metrics.accuracy_score(y_test, y_tree_pred)))
+print('Null Accuracy: {:.3f}'.format(1-(y_train.sum()/(y_train.count()))))
+print('Precision: {:.3f}'.format(sk.metrics.precision_score(y_test, y_tree_pred, average='micro')))
+print('Recall: {:.3f}'.format(sk.metrics.recall_score(y_test, y_tree_pred, average='micro')))
+```
+
+```{python}
+#@title Reduced variable decision tree
+viz = dtreeviz(classifier_res, X_train, y_train,
+               target_name='poisonous',
+               feature_names=X_train.columns.to_list(),
+               scale=1.0)
+viz
+```
+
+```{python}
+#@title Reduced Variable Decision Forest
+from sklearn.ensemble import RandomForestClassifier
+
+X = Reduced_Shrooms.drop('poisonous', axis=1)
+y = Reduced_Shrooms['poisonous']
+y = y.astype('int')
+X = X.astype('int')
+
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.20)
+
+forest_classifier = RandomForestClassifier(n_estimators=1000, bootstrap=True, max_features=0.8, max_samples=0.8 )
+forest_classifier.fit(X_train, y_train)
+
+y_forest_pred = forest_classifier.predict(X_test)
+
+from sklearn.metrics import confusion_matrix
+cm_forest = confusion_matrix(y_test, y_forest_pred)
+
+sns.heatmap(cm_forest, annot=True, cmap='Pastel2', linewidths=1, linecolor='black')
+plt.xlabel('Predicted Poisonous')
+plt.ylabel('True Poisonous')
+```
+
+Although we have introduced a small amount of error, significantly reducing the
+variables seems to have been incredibly successful. However, I can see a
+possible problem with getting a spore print for the models. Typically a spore
+print is allowed to form on a piece of paper overnight. I left it in our dataset
+because I assume there is a way to reliably get spore color without having to
+wait that long (since we are only concerned with color, not getting a clear
+print). Before moving on lets quickly try and create a reduced model that
+doesn't rely on spore prints.
+
+```{python}
+#| cellView: form
+#@title Create Desicion Forest Without Spore Prints
+Shrooms_df = pd.read_csv('/content/mushrooms.csv')
+
+Shrooms_df = Shrooms_df.rename(columns={'class':'poisonous',
+                           'cap-shape':'cap_shape',
+                           'cap-surface':'cap_surface',
+                           'cap-color':'cap_color',
+                           'gill-attachment':'gill_attachment',
+                           'gill-spacing':'gill_spacing',
+                           'gill-size':'gill_size',
+                           'gill-color':'gill_color',
+                           'stalk-shape':'stalk_shape',
+                           'stalk-root':'stalk_root',
+                           'stalk-surface-above-ring':'stalk_surface_above_ring',
+                           'stalk-surface-below-ring':'stalk_surface_below_ring',
+                           'stalk-color-above-ring':'stalk_color_above_ring',
+                           'stalk-color-below-ring':'stalk_color_below_ring',
+                           'veil-type':'veil_type',
+                           'veil-color':'veil_color',
+                           'ring-number':'ring_number',
+                           'ring-type':'ring_type',
+                           'spore-print-color':'spore_print_color'
+                           })
+
+Shrooms_df = Shrooms_df.drop(labels=['population','habitat','bruises','spore_print_color'], axis=1)
+
+bin_names = ['poisonous']
+bin_features = Shrooms_df[bin_names]
+bin_scaler = OrdinalEncoder().fit(bin_features.values)
+bin_features = bin_scaler.transform(bin_features.values)
+Shrooms_df[bin_names] = bin_features
+
+middlechild = Shrooms_df.drop(labels = ['poisonous'], axis=1)
+
+cat_names = ['cap_shape',
+             'cap_surface',
+             'cap_color',
+             'odor',
+             'gill_attachment',
+             'gill_spacing',
+             'gill_color',
+             'stalk_root',
+             'stalk_surface_above_ring',
+             'stalk_surface_below_ring',
+             'stalk_color_above_ring',
+             'stalk_color_below_ring',
+             'veil_color',
+             'ring_number',
+             'ring_type',
+             'gill_size',
+             'stalk_shape',
+             'veil_type',
+             ]
+df_cat = pd.get_dummies(data=middlechild, columns=cat_names)
+Shrooms_df = pd.concat([Shrooms_df, df_cat], axis=1)
+Shrooms_df = Shrooms_df.drop(cat_names, axis=1)
+
+X = Shrooms_df.drop('poisonous', axis=1)
+y = Shrooms_df['poisonous']
+y = y.astype('int')
+X = X.astype('int')
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
+
+from sklearn.ensemble import RandomForestClassifier
+
+forest_classifier = RandomForestClassifier(n_estimators=1000, bootstrap=True, max_features=0.8, max_samples=0.8 )
+forest_classifier.fit(X_train, y_train)
+
+y_forest_pred = forest_classifier.predict(X_test)
+
+from sklearn.metrics import confusion_matrix
+cm_forest = confusion_matrix(y_test, y_forest_pred)
+```
+
+```{python}
+#| colab: {base_uri: https://localhost:8080/, height: 419}
+#| cellView: form
+#| executionInfo: {status: ok, timestamp: 1629424425824, user_tz: 360, elapsed: 565530, user: {displayName: Alex W, photoUrl: https://lh3.googleusercontent.com/a-/AOh14GiFzd0G_jRVol6WQbH8zz9gYzc91VKF4I_sObGZaA=s64, userId: '00724482172980213547'}}
+#@title  Calc Permutation Importance Without Spore Prints
+
+
+from sklearn.inspection import permutation_importance
+perm_result = permutation_importance(forest_classifier, X=X_test, y=y_test, scoring='accuracy', n_repeats = 30)
+forest_importances = pd.DataFrame({'variable':X_test.columns,'impo':perm_result.importances_mean.round(4), 'sd':perm_result.importances_std.round(4)})
+forest_importances.sort_values(by='impo', ascending = False)
+
+forest_importances_sorted = forest_importances.sort_values(by='impo', ascending=False)
+forest_importances_sorted.to_csv("permute_importance_wospores.csv")
+
+forest_importances_sorted.head(15)
+```
+
+```{python}
+#| colab: {base_uri: https://localhost:8080/, height: 297}
+#| cellView: form
+#| executionInfo: {status: ok, timestamp: 1629438072387, user_tz: 360, elapsed: 7799, user: {displayName: Alex W, photoUrl: https://lh3.googleusercontent.com/a-/AOh14GiFzd0G_jRVol6WQbH8zz9gYzc91VKF4I_sObGZaA=s64, userId: '00724482172980213547'}}
+#@title Create a Regression to Calc Optimal Features
+from sklearn.model_selection import KFold
+from sklearn.feature_selection import RFECV
+
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+X = Shrooms_df.drop(['poisonous'], axis=1)
+y = Shrooms_df['poisonous']
+
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.20)
+
+LR1 = LinearRegression()
+LR1.fit(X_train, y_train)
+
+min_features_to_select = 1
+rfecv = RFECV(estimator=LR1, step=1, cv=3, scoring= 'neg_mean_squared_error', min_features_to_select = min_features_to_select)
+rfecv.fit(X_train, y_train)
+
+print("Oprimal number of features: %d" % rfecv.n_features_)
+
+plt.figure()
+plt.xlabel("Number of features selected")
+plt.ylabel("Cross validation score (mean square error?)")
+plt.plot(range(min_features_to_select,
+               len(rfecv.grid_scores_) + min_features_to_select),
+         rfecv.grid_scores_)
+plt.show()
+```
+
+From the looks of things we aren't going to be able to eliminate the need for spore prints without adding a few variables to the model. Let's try a reduced dataset of the 12 most important predictive variables.
+
+```{python}
+Reduced_Shrooms_wout_spores = Shrooms_df.loc[:,['odor_n','odor_l','odor_a','stalk_root_c','stalk_surface_below_ring_y','stalk_root_b','cap_color_b','cap_color_w','cap_shape_c','gill_size_n','gill_size_b','poisonous']]
+```
+
+```{python}
+#| cellView: form
+#@title Split our Reduced Dataframe Without Spore Prints and create a new Decision Tree
+X = Reduced_Shrooms_wout_spores.drop('poisonous', axis=1)
+y = Reduced_Shrooms_wout_spores['poisonous']
+y = y.astype('int')
+X = X.astype('int')
+
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.20)
+
+from sklearn.tree import DecisionTreeClassifier
+
+tree_classifier = DecisionTreeClassifier()
+tree_classifier.fit(X_train, y_train)
+
+from sklearn.tree import DecisionTreeClassifier
+classifier = DecisionTreeClassifier()
+classifier_res = classifier.fit(X_train, y_train)
+
+y_tree_pred = classifier.predict(X_test)
+```
+
+```{python}
+#| colab: {base_uri: https://localhost:8080/}
+#| cellView: form
+#| executionInfo: {status: ok, timestamp: 1629441377962, user_tz: 360, elapsed: 123, user: {displayName: Alex W, photoUrl: https://lh3.googleusercontent.com/a-/AOh14GiFzd0G_jRVol6WQbH8zz9gYzc91VKF4I_sObGZaA=s64, userId: '00724482172980213547'}}
+#@title Reduced Decision Tree Without Spore Prints Preformance
+print('Accuracy: {:.3f}'.format(sk.metrics.accuracy_score(y_test, y_tree_pred)))
+print('Null Accuracy: {:.3f}'.format(1-(y_train.sum()/(y_train.count()))))
+print('Precision: {:.3f}'.format(sk.metrics.precision_score(y_test, y_tree_pred, average='micro')))
+print('Recall: {:.3f}'.format(sk.metrics.recall_score(y_test, y_tree_pred, average='micro')))
+```
+
+```{python}
+#| colab: {base_uri: https://localhost:8080/, height: 900}
+#| cellView: form
+#| executionInfo: {status: ok, timestamp: 1629441388945, user_tz: 360, elapsed: 4864, user: {displayName: Alex W, photoUrl: https://lh3.googleusercontent.com/a-/AOh14GiFzd0G_jRVol6WQbH8zz9gYzc91VKF4I_sObGZaA=s64, userId: '00724482172980213547'}}
+#@title Reduced Dataframe without Spore Prints desicion tree
+viz = dtreeviz(classifier_res, X_train, y_train,
+               target_name='poisonous',
+               feature_names=X_train.columns.to_list(),
+               scale=1.0)
+viz
+```
+
+We have introduced a few more false negatives into our model but still have a very solid decision tree after eliminating the need for spore prints. Finally, before interpreting the models lets create a decision forest that hopefully elminates most of the false negatives.
+
+```{python}
+#| colab: {base_uri: https://localhost:8080/, height: 296}
+#| cellView: form
+#| executionInfo: {status: ok, timestamp: 1629441411910, user_tz: 360, elapsed: 3511, user: {displayName: Alex W, photoUrl: https://lh3.googleusercontent.com/a-/AOh14GiFzd0G_jRVol6WQbH8zz9gYzc91VKF4I_sObGZaA=s64, userId: '00724482172980213547'}}
+#@title Reduced Variable Decision Forest without Spore Prints
+from sklearn.ensemble import RandomForestClassifier
+
+X = Reduced_Shrooms_wout_spores.drop('poisonous', axis=1)
+y = Reduced_Shrooms_wout_spores['poisonous']
+y = y.astype('int')
+X = X.astype('int')
+
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.20)
+
+forest_classifier = RandomForestClassifier(n_estimators=1000, bootstrap=True, max_features=0.8, max_samples=0.8 )
+forest_classifier.fit(X_train, y_train)
+
+y_forest_pred = forest_classifier.predict(X_test)
+
+from sklearn.metrics import confusion_matrix
+cm_forest = confusion_matrix(y_test, y_forest_pred)
+
+sns.heatmap(cm_forest, annot=True, cmap='Pastel2', linewidths=1, linecolor='black')
+plt.xlabel('Predicted Poisonous')
+plt.ylabel('True Poisonous')
+```
+
+```{python}
+#| colab: {base_uri: https://localhost:8080/}
+#| cellView: form
+#| executionInfo: {status: ok, timestamp: 1629441482959, user_tz: 360, elapsed: 114, user: {displayName: Alex W, photoUrl: https://lh3.googleusercontent.com/a-/AOh14GiFzd0G_jRVol6WQbH8zz9gYzc91VKF4I_sObGZaA=s64, userId: '00724482172980213547'}}
+#@title Decision Forest Without Spore Prints Preformance
+print('Accuracy: {:.3f}'.format(sk.metrics.accuracy_score(y_test, y_forest_pred)))
+print('Null Accuracy: {:.3f}'.format(1-(y_train.sum()/(y_train.count()))))
+print('Precision: {:.3f}'.format(sk.metrics.precision_score(y_test, y_forest_pred, average='micro')))
+print('Recall: {:.3f}'.format(sk.metrics.recall_score(y_test, y_forest_pred, average='micro')))
+```
+
+## <font color='lightblue'>5. Interpret your model</font>
+
+**Q5**: Interpret your model results. E.g., what features contributed to your predictions, if possible, can you determine the sign and magnitude of the effect (Marks: 2).
+
+Our root node in every model does an incredible amount of work. You wouldn't expect a single variable to be so dominant, but, as it turns out, a mushroom not having an odor is an incredibly strong predictor for edibility. I wouldn't trust the odds just foraging around, but... if I was lost and starving they are quite good.
+
+```{python}
+#| colab: {base_uri: https://localhost:8080/, height: 297}
+#| cellView: form
+#| executionInfo: {status: ok, timestamp: 1629432498667, user_tz: 360, elapsed: 282, user: {displayName: Alex W, photoUrl: https://lh3.googleusercontent.com/a-/AOh14GiFzd0G_jRVol6WQbH8zz9gYzc91VKF4I_sObGZaA=s64, userId: '00724482172980213547'}}
+#@title Data broken down by Odor = none
+sns.countplot(data=Shrooms_df, x='odor_n', hue='poisonous', palette='Pastel2')
+```
+
+```{python}
+#| colab: {base_uri: https://localhost:8080/}
+#| cellView: form
+#| executionInfo: {status: ok, timestamp: 1629439079740, user_tz: 360, elapsed: 121, user: {displayName: Alex W, photoUrl: https://lh3.googleusercontent.com/a-/AOh14GiFzd0G_jRVol6WQbH8zz9gYzc91VKF4I_sObGZaA=s64, userId: '00724482172980213547'}}
+#@title Probability the "smell test" will pay off:
+Smell_test = Shrooms_df.loc[Shrooms_df['odor_n']==1]
+print(f"The probability the \"smell test\" will pay off is: { round(1 - len(Smell_test.loc[Smell_test['poisonous']==1].index) / len(Smell_test.index), 2) }.")
+```
+
+Overall, both the reduced models preform very well with over 99% accuracy. This is important because the stakes in being wrong are high. The main difference between the models is that our model without spore prints seems to reliably produce a slightly higher amount of false negatives, which is problematic. Unfortunately, the leaf node those false negatives appear in also ruin a potentially great opportunity to generalize edibility for my scenario 2 goal (as the non white cap color node could have contained ~2500 edible mushrooms).
+
+## <font color='lightblue'>6. Answer your question</font>
+
+**Q6:** Use your analysis above to answer your question of interest. Did you achieve your desired outcome, and what might the next steps be? Remember to write as though you are writing to team mates working on the same/similar problem. (Marks: 3)
+
+**For Scenario 1:**
+The desired outcome was achieved, in both cases we created very accurate results. In the event spore print color can be reliably found without having to wait, we should prioritize that model as it makes fewer false negatives.
+
+Going forward we should test the model for overfitting, the results are a little too good to believe and it would be interesting to know if the models predict other samples just as well. We could also experiment with increasing the variables of the model. For example, the software could make the person entering the data choose the colors of the parts of the mushroom based on a drop down menu. This could allow us to add some variables back without risking too much user error. This could be particularily useful with the no spore print model, which looks like it could benefit from having a few more variables.
+
+**For Scenario 2:**
+Both decision trees show that a smelly mushroom, without a clubbed stalk root, that isn't scaly under the ring, and doesn't have an almond or anise smell is poisonous everytime. If a mnemonic device or rhyme could somehow be created to remember that it could potentially be useful for field-use (as enteries with these characteristics account for the vast majority of poisonous mushrooms).
+
+Alternatively, if a spore print is possible, a non smelly mushroom without a green spore print or a scaly stalk below the ring, that doesn't have a groovy white cap, is safe to eat everytime. Mushrooms with these characteristics are numerous and represent over a third of our testing data.
+
+It may be unrealistic to assume the general public would be able to learn these, however, it is beliveable for serious outdoorsmen, especially since the classification system comes from and is described in the National Audubon field guide.
+
+Going forward we should (like Scenario 1) somehow test for overfitting. Assuming the model generalizes well, mnemonic tricks should be explored, and we should find ways to expose foragers to our findings.
+
+Note: It is ok if your analysis doesn't provide a strong answer, you can point out where it failed. If anything you can cross the approach you took off the list of possible ways to tackle your question. I.e., you still made progress!
+
+<img src='https://healing-mushrooms.net/wp-content/uploads/2020/07/Mushroom-Spore-Prints.jpg'>
+
+**Title**
+This is how it works
+$ 5 + 2 = 7 $
+
